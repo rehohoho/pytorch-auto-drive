@@ -31,12 +31,12 @@ class LaneDetTester(BaseTester):
             self.test_one_set(self.model, self.device, self.dataloader, self._cfg['mixed_precision'],
                               [self._cfg['input_size'], self._cfg['original_size']],
                               self._cfg['gap'], self._cfg['ppl'], self._cfg['thresh'],
-                              self._cfg['dataset_name'], self._cfg['seg'], self._cfg['max_lane'], self._cfg['exp_name'])
+                              self._cfg['dataset_name'], self._cfg['seg'], self._cfg['max_lane'], self._cfg['exp_name'], self._cfg['ignore_thres'])
 
     @staticmethod
     @torch.no_grad()
     def test_one_set(net, device, loader, mixed_precision, input_sizes, gap, ppl, thresh, dataset,
-                     seg, max_lane=0, exp_name=None):
+                     seg, max_lane=0, exp_name=None, ignore_thres=False):
         # Adapted from harryhan618/SCNN_Pytorch
         # Predict on 1 data_loader and save predictions for the official script
         # sizes: [input size, test original size, ...]
@@ -48,8 +48,8 @@ class LaneDetTester(BaseTester):
             images = images.to(device)
             with autocast(mixed_precision):
                 if seg:
-                    batch_coordinates = lane_as_segmentation_inference(net, images,
-                                                                       input_sizes, gap, ppl, thresh, dataset, max_lane)
+                    batch_coordinates, conf = lane_as_segmentation_inference(net, images, input_sizes, gap, ppl, 
+                                                                             thresh, dataset, max_lane, ignore_thres=ignore_thres)
                 else:
                     batch_coordinates = net.inference(images, input_sizes, gap, ppl, dataset, max_lane)
 
@@ -67,6 +67,9 @@ class LaneDetTester(BaseTester):
                                 for (x, y) in lane:
                                     print("{} {}".format(x, y), end=" ", file=f)
                                 print(file=f)
+                    if seg:
+                        conf_name = filenames[j].replace('lines.txt', 'conf.pt')
+                        torch.save(conf, conf_name)
                 elif dataset == 'tusimple':
                     # Save lanes to a single file
                     formatted = {

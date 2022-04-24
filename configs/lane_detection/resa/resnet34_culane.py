@@ -40,6 +40,7 @@ test = dict(
 
     save_dir='./checkpoints',
 
+    ignore_thres=False,
     seg=True,
     gap=20,
     ppl=18,

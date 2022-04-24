@@ -92,7 +92,7 @@ def prob_to_lines(seg_pred, exist, resize_shape=None, smooth=True, gap=20, ppl=N
 
 # A unified inference function, for segmentation-based lane detection methods
 @torch.no_grad()
-def lane_as_segmentation_inference(net, inputs, input_sizes, gap, ppl, thresh, dataset, max_lane=0, forward=True):
+def lane_as_segmentation_inference(net, inputs, input_sizes, gap, ppl, thresh, dataset, max_lane=0, forward=True, ignore_thres=False):
     # Assume net and images are on the same device
     # images: B x C x H x W
     # Return: a list of lane predictions on each image
@@ -100,7 +100,13 @@ def lane_as_segmentation_inference(net, inputs, input_sizes, gap, ppl, thresh, d
     prob_map = torch.nn.functional.interpolate(outputs['out'], size=input_sizes[0], mode='bilinear',
                                                align_corners=True).softmax(dim=1)
     existence_conf = outputs['lane'].sigmoid()
-    existence = existence_conf > 0.5
+
+    exist_conf = 0.5
+    if ignore_thres:
+        thresh = 0.0
+        exist_conf = 0.0
+
+    existence = existence_conf > exist_conf
     if max_lane != 0:  # Lane max number prior for testing
         existence, existence_conf = lane_pruning(existence, existence_conf, max_lane=max_lane)
 
@@ -113,4 +119,4 @@ def lane_as_segmentation_inference(net, inputs, input_sizes, gap, ppl, thresh, d
         lane_coordinates.append(prob_to_lines(prob_map[j], existence[j], resize_shape=input_sizes[1],
                                               gap=gap, ppl=ppl, thresh=thresh, dataset=dataset))
 
-    return lane_coordinates
+    return lane_coordinates, existence_conf
