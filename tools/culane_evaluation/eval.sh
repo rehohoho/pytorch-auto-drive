@@ -1,8 +1,13 @@
 #!/bin/bash
 root=../../
-data_dir=../../../../dataset/culane/
+data_dir=../../../data/culane/
 exp=$1
 detect_dir=../../output/
+
+if ! [ -d ./output ]
+  then
+    mkdir ./output
+fi
 
 # These can not be changed
 w_lane=30;

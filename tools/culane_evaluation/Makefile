@@ -15,7 +15,7 @@ BUILD_DIR := build
 CXX ?= g++
 BUILD_DIR ?= ./build
 
-LIBRARIES += opencv_core opencv_highgui opencv_imgproc
+LIBRARIES += opencv_core opencv_highgui opencv_imgproc opencv_imgcodecs
 
 ifeq ($(OPENCV_VERSION), 3)
         LIBRARIES += opencv_imgcodecs
