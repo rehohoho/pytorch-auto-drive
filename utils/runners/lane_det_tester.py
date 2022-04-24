@@ -69,7 +69,7 @@ class LaneDetTester(BaseTester):
                                 print(file=f)
                     if seg:
                         conf_name = filenames[j].replace('lines.txt', 'conf.pt')
-                        torch.save(conf, conf_name)
+                        torch.save(conf[j], conf_name)
                 elif dataset == 'tusimple':
                     # Save lanes to a single file
                     formatted = {
