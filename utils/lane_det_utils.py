@@ -20,6 +20,7 @@ def get_lane(prob_map, gap, ppl, thresh, resize_shape=None, dataset='culane'):
     Return:
     ----------
     coords: x coords bottom up every gap px, 0 for non-exist, in resized shape
+    conf: corresponding confidences in range [0, 1]
     """
 
     if resize_shape is None:
@@ -27,6 +28,7 @@ def get_lane(prob_map, gap, ppl, thresh, resize_shape=None, dataset='culane'):
     h, w = prob_map.shape
     H, W = resize_shape
     coords = np.zeros(ppl)
+    conf = np.zeros(ppl)
     for i in range(ppl):
         if dataset == 'tusimple':  # Annotation start at 10 pixel away from bottom
             y = int(h - (ppl - i) * gap / H * h)
@@ -40,9 +42,11 @@ def get_lane(prob_map, gap, ppl, thresh, resize_shape=None, dataset='culane'):
         id = np.argmax(line)
         if line[id] > thresh:
             coords[i] = int(id / w * W)
+            conf[i] = line[id]
     if (coords > 0).sum() < 2:
         coords = np.zeros(ppl)
-    return coords
+        conf = np.zeros(ppl)
+    return coords, conf
 
 
 # Adapted from harryhan618/SCNN_Pytorch
@@ -61,13 +65,14 @@ def prob_to_lines(seg_pred, exist, resize_shape=None, smooth=True, gap=20, ppl=N
     Return:
     ----------
     coordinates: [x, y] list of lanes, e.g.: [ [[9, 569], [50, 549]] ,[[630, 569], [647, 549]] ]
+    confs: [c] list of corresponding confidence, e.g. [ [0.15, 0.9], [0.88, 0.12] ]
     """
     if resize_shape is None:
         resize_shape = seg_pred.shape[1:]  # seg_pred (num_classes, h, w)
     _, h, w = seg_pred.shape
     H, W = resize_shape
     coordinates = []
-
+    confs = []
     if ppl is None:
         ppl = round(H / 2 / gap)
 
@@ -76,18 +81,20 @@ def prob_to_lines(seg_pred, exist, resize_shape=None, smooth=True, gap=20, ppl=N
         if exist[i - 1]:
             if smooth:
                 prob_map = cv2.blur(prob_map, (9, 9), borderType=cv2.BORDER_REPLICATE)
-            coords = get_lane(prob_map, gap, ppl, thresh, resize_shape, dataset=dataset)
+            coords, conf = get_lane(prob_map, gap, ppl, thresh, resize_shape, dataset=dataset)
             if coords.sum() == 0:
                 continue
             if dataset == 'tusimple':  # Invalid sample points need to be included as negative value, e.g. -2
                 coordinates.append([[coords[j], H - (ppl - j) * gap] if coords[j] > 0 else [-2,  H - (ppl - j) * gap]
                                     for j in range(ppl)])
+                confs.append(conf)
             elif dataset in ['culane', 'llamas']:
-                coordinates.append([[coords[j], H - j * gap - 1] for j in range(ppl) if coords[j] > 0])
+                coordinates.append([[coords[j], H - j * gap] for j in range(ppl) if coords[j] > 0]) # 1-indexing as per GT
+                confs.append([conf[j] for j in range(ppl) if coords[j] > 0])
             else:
                 raise ValueError
 
-    return coordinates
+    return coordinates, confs
 
 
 # A unified inference function, for segmentation-based lane detection methods
@@ -115,8 +122,11 @@ def lane_as_segmentation_inference(net, inputs, input_sizes, gap, ppl, thresh, d
 
     # Get coordinates for lanes
     lane_coordinates = []
+    lane_conf = []
     for j in range(existence.shape[0]):
-        lane_coordinates.append(prob_to_lines(prob_map[j], existence[j], resize_shape=input_sizes[1],
-                                              gap=gap, ppl=ppl, thresh=thresh, dataset=dataset))
+        coordinates, conf = prob_to_lines(prob_map[j], existence[j], resize_shape=input_sizes[1],
+                                          gap=gap, ppl=ppl, thresh=thresh, dataset=dataset)
+        lane_coordinates.append(coordinates)
+        lane_conf.append(conf)
 
-    return lane_coordinates, existence_conf
+    return lane_coordinates, existence_conf, lane_conf

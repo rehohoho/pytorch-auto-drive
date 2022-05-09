@@ -48,8 +48,8 @@ class LaneDetTester(BaseTester):
             images = images.to(device)
             with autocast(mixed_precision):
                 if seg:
-                    batch_coordinates, conf = lane_as_segmentation_inference(net, images, input_sizes, gap, ppl, 
-                                                                             thresh, dataset, max_lane, ignore_thres=ignore_thres)
+                    batch_coordinates, lane_conf, lanept_conf = lane_as_segmentation_inference(
+                        net, images, input_sizes, gap, ppl, thresh, dataset, max_lane, ignore_thres=ignore_thres)
                 else:
                     batch_coordinates = net.inference(images, input_sizes, gap, ppl, dataset, max_lane)
 
@@ -68,8 +68,12 @@ class LaneDetTester(BaseTester):
                                     print("{} {}".format(x, y), end=" ", file=f)
                                 print(file=f)
                     if seg:
-                        conf_name = filenames[j].replace('lines.txt', 'conf.pt')
-                        torch.save(conf[j], conf_name)
+                        confs_name = filenames[j].replace('lines.txt', 'conf.pt')
+                        confs = {
+                            'lane_conf': lane_conf[j], 
+                            'lanept_conf': lanept_conf[j]
+                        }
+                        torch.save(confs, confs_name)
                 elif dataset == 'tusimple':
                     # Save lanes to a single file
                     formatted = {
