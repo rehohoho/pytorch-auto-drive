@@ -89,7 +89,7 @@ def prob_to_lines(seg_pred, exist, resize_shape=None, smooth=True, gap=20, ppl=N
                                     for j in range(ppl)])
                 confs.append(conf)
             elif dataset in ['culane', 'llamas']:
-                coordinates.append([[coords[j], H - j * gap] for j in range(ppl) if coords[j] > 0]) # 1-indexing as per GT
+                coordinates.append([[coords[j], H - j * gap - 1] for j in range(ppl) if coords[j] > 0])
                 confs.append([conf[j] for j in range(ppl) if coords[j] > 0])
             else:
                 raise ValueError
