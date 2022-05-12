@@ -220,7 +220,7 @@ class BaseTester(BaseRunner):
         # Dataset
         transforms = TRANSFORMS.from_dict(cfg['test_augmentation'])
         dataset = DATASETS.from_dict(cfg['test_dataset'] if 'test_dataset' in cfg.keys() else cfg['dataset'],
-                                     image_set=self.image_sets[self._cfg['state'] - 1],
+                                     image_set=cfg['test']['image_set'] if 'image_set' in cfg['test'].keys() else self.image_sets[self._cfg['state'] - 1],
                                      transforms=transforms)
         self.get_dataset_statics(dataset, map_dataset_statics)
 

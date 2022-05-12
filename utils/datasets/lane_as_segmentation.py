@@ -16,6 +16,8 @@ class _StandardLaneDetectionDataset(VisionDataset):
             self.test = 1
         elif image_set == 'test' or image_set == 'val':  # Different format (without lane existence annotations)
             self.test = 2
+        elif image_set == 'extract':
+            self.test = 3
         else:
             self.test = 0
 
@@ -35,7 +37,7 @@ class _StandardLaneDetectionDataset(VisionDataset):
         # if not just testing,
         # else just return input image.
         img = Image.open(self.images[index]).convert('RGB')
-        if self.test == 2:
+        if self.test >= 2:
             target = self.masks[index]
         elif self.test == 1:
             target = Image.open(self.masks[index])
@@ -59,7 +61,8 @@ class _StandardLaneDetectionDataset(VisionDataset):
         split_f = os.path.join(self.splits_dir, self.image_set + '.txt')
         with open(split_f, "r") as f:
             contents = [x.strip() for x in f.readlines()]
-        if self.test == 2:  # Test
+        if self.test >= 2:  # Test
+            contents = [content.split(' ')[0] for content in contents]
             self.images = [os.path.join(self.image_dir, x + self.image_suffix) for x in contents]
             self.masks = [os.path.join(self.output_prefix, x + self.output_suffix) for x in contents]
         elif self.test == 1:  # Val
