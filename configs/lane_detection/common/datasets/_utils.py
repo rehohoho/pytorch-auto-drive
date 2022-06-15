@@ -1,3 +1,3 @@
-CULANE_ROOT = '../../dataset/culane'
-TUSIMPLE_ROOT = '../../dataset/tusimple'
-LLAMAS_ROOT = '../../dataset/llamas'
+CULANE_ROOT = '../data/culane'
+TUSIMPLE_ROOT = '../data/tusimple'
+LLAMAS_ROOT = '../data/llamas'

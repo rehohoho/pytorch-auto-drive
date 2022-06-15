@@ -129,4 +129,4 @@ def lane_as_segmentation_inference(net, inputs, input_sizes, gap, ppl, thresh, d
         lane_coordinates.append(coordinates)
         lane_conf.append(conf)
 
-    return lane_coordinates, existence_conf, lane_conf
+    return lane_coordinates, existence_conf, lane_conf, outputs['out']
